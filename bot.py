@@ -1,3 +1,7 @@
+from twilio.rest import Client
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from selenium import webdriver
 import selenium.webdriver.support.ui as ui
 from selenium.webdriver.firefox.options import Options
@@ -9,14 +13,15 @@ import getpass
 
 class Bot():
     def __init__(self):
+        # Selenium Setup
         options = Options()
-        #options.headless = True
-        self.driver = webdriver.Firefox()#options=options)
+        options.headless = True
+        self.driver = webdriver.Firefox(options=options)
         self.waiter = ui.WebDriverWait(self.driver, 60)
         self.timeout = None 
         self.type = None
 
-    def start(self):
+    def start(self):  
         # Grabbing and opening link
         link = input('Link to Hotseat Topic: ')
         self.driver.get(link)
@@ -53,7 +58,7 @@ class Bot():
         self.driver.find_element_by_xpath(f'//a[@href="/Topic/View/{topic_id}"]').click()
 
         # Wait until topic screen opens
-        self.waiter.until(lambda driver: self.driver.find_element_by_id('PostDescription'))
+        self.waiter.until(lambda driver: self.driver.find_element_by_id("thoughts"))
     
         # Clears console for corresponding OS
         if os.name == 'nt': 
@@ -78,12 +83,9 @@ class Bot():
         self.driver.find_element_by_id('PostDescription').send_keys(msg) 
         self.driver.find_element_by_xpath('//label[@title="Post Anoymous"]').click()
         self.driver.find_element_by_id('btnSubmit').click()
-        if self.timeout != 0:
-            self.driver.manage().timeouts().implicitlyWait(self.timeout, TimeUnit.SECONDS)
 
     def replyToRecent(self, msg):
-        #//div[@id="questions"]/div[0]/div[0]/div[0]/
-        self.driver.find_element_by_xpath('//div[@id="questions"]/div[0]/div[0]/div[0]/a/span[class="reply-num"]').click()
+        self.driver.find_element_by_xpath('//div[@class="thought-container"][1]/div[@class="question-replies"][0]/div[@class="question"]/div[0]/a').click();#/div[0]/div[0]/div[0]/a[0]/span[class="reply-num"]').click()
         self.waiter.until(lambda driver: self.driver.find_element_by_xpath('//div[@id="questions"]/div[0]/div[0]/ul/li[@class="reply-form"]'))
         self.driver.find_element_by_xpath('//div[@id="questions"]/div[0]/div[0]/ul/li[@class="reply-form"]/textarea[0]').send_keys(msg)
         self.driver.find_element_by_xpath('//div[@id="questions"]/div[0]/div[0]/ul/li[@class="reply-form"]/label[0]').click()
@@ -105,11 +107,14 @@ def chooseType():
         bot.type = 'reply'
     else:
         print('Invalid option')
+        bot.type = 'exit'
         sys.exit()
 
 if __name__ == "__main__":
     bot = Bot()
-    bot.start()
     chooseType()
-    bot.run()
+    bot.start()
+    while bot.type != 'exit':
+        bot.run()
+        chooseType()
     bot.close()
